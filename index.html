@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechTeeUp for Charity - Leaderboard</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #ffd700;
+            padding: 20px;
+            border-bottom: 4px solid #000;
+            position: relative;
+        }
+        
+        .tournament-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .tournament-subtitle {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .tournament-date {
+            font-size: 1rem;
+            color: #555;
+        }
+        
+        .sponsor {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        /* Leaderboard Styles */
+        .leaderboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th {
+            background-color: #ffd700;
+            color: #000;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+        }
+        
+        .leaderboard-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .leaderboard-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .leaderboard-table tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+        
+        .position-cell {
+            font-weight: bold;
+            width: 60px;
+        }
+        
+        .name-cell {
+            font-weight: bold;
+            width: 250px;
+        }
+        
+        .score-cell {
+            width: 100px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .score-cell:hover {
+            background-color: #fffde7;
+        }
+        
+        .score-cell.editable:after {
+            content: "✎";
+            position: absolute;
+            right: 10px;
+            opacity: 0.5;
+        }
+        
+        .score-input {
+            width: 100%;
+            padding: 5px;
+            border: 2px solid #ffd700;
+            border-radius: 3px;
+        }
+        
+        .total-score {
+            font-weight: bold;
+        }
+        
+        .under-par {
+            color: #2e7d32;
+        }
+        
+        .over-par {
+            color: #c62828;
+        }
+        
+        .par {
+            color: #000;
+        }
+        
+        /* Footer Styles */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .tournament-title {
+                font-size: 1.8rem;
+            }
+            
+            .sponsor {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-top: 10px;
+            }
+            
+            .leaderboard-table th, 
+            .leaderboard-table td {
+                padding: 8px;
+            }
+            
+            .name-cell {
+                width: auto;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .tournament-title {
+                font-size: 1.5rem;
+            }
+            
+            .tournament-subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="tournament-title">TechTeeUp for Charity</h1>
+        <p class="tournament-date">Elm Park Golf Club • June 10, 2025</p>
+    </div>
+    
+    <div class="leaderboard-container">
+        <table class="leaderboard-table" id="leaderboard">
+            <thead>
+                <tr>
+                    <th>POS</th>
+                    <th>TEAM</th>
+                    <th>SCORE</th>
+                    <th>HANDICAP</th>
+                    <th>NET SCORE</th>
+                    <th>TO PAR</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <!-- Leaderboard data will be inserted here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>Uniting tech, startup, and investment professionals to support Children's Heartbeat Trust, Just Ask, and Our Lady's Hospice & Care Services. Thank you for your support</p>
+    </div>
+
+    <script>
+        // Constants
+        const PAR = 69;
+        const STORAGE_KEY = 'golfLeaderboardData';
+        
+        // Player data model
+        let players = [];
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', initializeScoreboard);
+        
+        // Core Functions
+        function initializeScoreboard() {
+            // Try to load data from localStorage first
+            if (!loadFromLocalStorage()) {
+                // If no saved data, initialize with default players
+                initializeDefaultPlayers();
+            }
+            
+            calculatePositions();
+            renderScoreboard();
+        }
+        
+        function initializeDefaultPlayers() {
+            const defaultNames = [
+                "Needl", "EDesk", "Amplifi", "Philip Lee",
+                "Stripe", "Elkstone", "Bay Advisory", "Wallace Solicitors",
+                "CircleRock", "HBAN Angels", "TechStart", "Happy Stack",
+                "Bold Golf", "Founder Labs", "Jim Mountjoy", "Ed O'Riordan",
+                "DB Recruitment", "Protex", "Iona Star VC", "Delta",
+                "ACT", "Hadfield Green", "Sigmar", "Nucleo",
+                "BVP"
+            ];
+            
+            // Generate realistic golf scores and handicaps
+            players = defaultNames.map((name, index) => {
+                // Random handicap between 10 and 20
+                const handicap = Math.floor(Math.random() * 11) + 10;
+                
+                // Generate a realistic golf score
+                // Most scores will be around par (69) + handicap with some variation
+                // Good teams might score under their handicap, poor teams over
+                const variation = Math.floor(Math.random() * 15) - 5; // -5 to +9 variation
+                const currentRound = PAR + handicap + variation;
+                
+                // Calculate net score (gross score - handicap)
+                const totalScore = currentRound - handicap;
+                
+                // Calculate to par
+                const toPar = totalScore - PAR;
+                
+                return {
+                    id: index + 1,
+                    name: name,
+                    currentRound: currentRound,
+                    handicap: handicap,
+                    totalScore: totalScore,
+                    position: 0, // Will be calculated
+                    toPar: toPar
+                };
+            });
+        }
+        
+        function renderScoreboard() {
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+            
+            players.forEach(player => {
+                const row = document.createElement('tr');
+                
+                // Position cell
+                const posCell = document.createElement('td');
+                posCell.className = 'position-cell';
+                posCell.textContent = player.position;
+                row.appendChild(posCell);
+                
+                // Name cell
+                const nameCell = document.createElement('td');
+                nameCell.className = 'name-cell';
+                nameCell.textContent = player.name;
+                row.appendChild(nameCell);
+                
+                // Score cell (editable)
+                const roundCell = document.createElement('td');
+                roundCell.className = 'score-cell editable';
+                roundCell.textContent = player.currentRound;
+                roundCell.dataset.playerId = player.id;
+                roundCell.dataset.field = 'currentRound';
+                roundCell.addEventListener('click', handleScoreClick);
+                row.appendChild(roundCell);
+                
+                // Handicap cell (editable)
+                const handicapCell = document.createElement('td');
+                handicapCell.className = 'score-cell editable';
+                handicapCell.textContent = player.handicap;
+                handicapCell.dataset.playerId = player.id;
+                handicapCell.dataset.field = 'handicap';
+                handicapCell.addEventListener('click', handleScoreClick);
+                row.appendChild(handicapCell);
+                
+                // Net score cell
+                const totalCell = document.createElement('td');
+                totalCell.className = 'score-cell total-score';
+                totalCell.textContent = player.totalScore;
+                row.appendChild(totalCell);
+                
+                // To par cell with color coding
+                const toParCell = document.createElement('td');
+                toParCell.className = 'score-cell';
+                
+                if (player.toPar < 0) {
+                    toParCell.classList.add('under-par');
+                    toParCell.textContent = player.toPar;
+                } else if (player.toPar > 0) {
+                    toParCell.classList.add('over-par');
+                    toParCell.textContent = '+' + player.toPar;
+                } else {
+                    toParCell.classList.add('par');
+                    toParCell.textContent = 'E';
+                }
+                
+                row.appendChild(toParCell);
+                tbody.appendChild(row);
+            });
+        }
+        
+        function handleScoreClick(event) {
+            const cell = event.target;
+            const playerId = parseInt(cell.dataset.playerId);
+            const field = cell.dataset.field;
+            const currentValue = cell.textContent;
+            
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'score-input';
+            input.value = currentValue;
+            input.min = 0;
+            input.max = 150; // Reasonable max golf score
+            
+            // Replace cell content with input
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Handle input blur (when user clicks away)
+            input.addEventListener('blur', () => {
+                finishEditing(input, playerId, field);
+            });
+            
+            // Handle enter key
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    finishEditing(input, playerId, field);
+                }
+            });
+            
+            // Prevent click event from bubbling
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+        
+        function finishEditing(input, playerId, field) {
+            const newValue = parseInt(input.value);
+            
+            // Validate input
+            if (isNaN(newValue) || newValue < 0 || (field === 'currentRound' && newValue > 150)) {
+                // Revert to previous value if invalid
+                const player = players.find(p => p.id === playerId);
+                input.parentNode.textContent = player[field];
+                return;
+            }
+            
+            // Update the score
+            updateScore(playerId, newValue, field);
+            
+            // Remove input and show updated value
+            const cell = input.parentNode;
+            cell.textContent = newValue;
+        }
+        
+        function updateScore(playerId, newScore, field) {
+            const player = players.find(p => p.id === playerId);
+            if (player) {
+                if (field === 'currentRound') {
+                    player.currentRound = newScore;
+                } else if (field === 'handicap') {
+                    player.handicap = newScore;
+                }
+                
+                // Calculate net score (score - handicap)
+                player.totalScore = player.currentRound - player.handicap;
+                player.toPar = player.totalScore - PAR; // Calculate to par based on net score
+                
+                // Recalculate positions and update display
+                calculatePositions();
+                renderScoreboard();
+                saveToLocalStorage();
+            }
+        }
+        
+        function calculatePositions() {
+            // Sort players by total score (ascending)
+            players.sort((a, b) => a.totalScore - b.totalScore);
+            
+            // Assign positions (1-based)
+            let currentPosition = 1;
+            let previousScore = null;
+            let tiedPlayers = 0;
+            
+            players.forEach((player, index) => {
+                if (index > 0 && player.totalScore === previousScore) {
+                    // Tie with previous player
+                    player.position = players[index - 1].position;
+                    tiedPlayers++;
+                } else {
+                    // New position
+                    player.position = currentPosition + tiedPlayers;
+                    currentPosition = player.position;
+                    tiedPlayers = 0;
+                }
+                previousScore = player.totalScore;
+            });
+        }
+        
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+        }
+        
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                players = JSON.parse(savedData);
+                return true;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
