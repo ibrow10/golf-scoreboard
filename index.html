@@ -157,9 +157,10 @@
         .name-cell {
             font-weight: bold;
             width: 250px;
-            text-align: left;
+            text-align: left !important;
             font-size: 1.2rem;
             text-transform: uppercase;
+            padding-left: 15px;
         }
         
         .flag-icon {
@@ -426,10 +427,12 @@
                 // Name cell
                 const nameCell = document.createElement('td');
                 nameCell.className = 'name-cell';
+                nameCell.style.textAlign = 'left';
                 
                 // Add a flag icon for visual enhancement
                 const nameContent = document.createElement('div');
                 nameContent.className = 'name-content';
+                nameContent.style.textAlign = 'left';
                 
                 nameContent.innerHTML = `<span class="flag-icon">${player.name.substring(0, 2).toUpperCase()}</span> ${player.name}`;
                 nameCell.appendChild(nameContent);
